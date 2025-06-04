@@ -15,7 +15,7 @@ type
     function GetAddress: string;
     function GetValue: Variant;
     function GetFormula: string;
-    function GetDataType: TXLSX4DDataType;
+    function GetDataType: TXLSX4DCellDataType;
     function GetFormat: string;
 
     // Setters
@@ -29,7 +29,7 @@ type
     property Address: string read GetAddress;
     property Value: Variant read GetValue write SetValue;
     property Formula: string read GetFormula write SetFormula;
-    property DataType: TXLSX4DDataType read GetDataType;
+    property DataType: TXLSX4DCellDataType read GetDataType;
     property Format: string read GetFormat write SetFormat;
 
     // Methods
