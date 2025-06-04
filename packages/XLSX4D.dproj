@@ -90,6 +90,7 @@
         <DCCReference Include="..\src\Interfaces\XLSX4D.Intf.Writer.pas"/>
         <DCCReference Include="..\src\Core\XLSX4D.Core.Cell.pas"/>
         <DCCReference Include="..\src\Core\XLSX4D.Core.Range.pas"/>
+        <DCCReference Include="..\src\Core\XLSX4D.Core.Worksheet.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
