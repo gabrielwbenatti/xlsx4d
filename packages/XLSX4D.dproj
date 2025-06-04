@@ -89,6 +89,7 @@
         <DCCReference Include="..\src\Interfaces\XLSX4D.Intf.Range.pas"/>
         <DCCReference Include="..\src\Interfaces\XLSX4D.Intf.Reader.pas"/>
         <DCCReference Include="..\src\Interfaces\XLSX4D.Intf.Writer.pas"/>
+        <DCCReference Include="..\src\Core\XLSX4D.Core.Cell.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

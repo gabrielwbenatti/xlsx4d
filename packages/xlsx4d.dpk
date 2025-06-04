@@ -39,6 +39,7 @@ contains
   XLSX4D.Intf.Document in '..\src\Interfaces\XLSX4D.Intf.Document.pas',
   XLSX4D.Intf.Range in '..\src\Interfaces\XLSX4D.Intf.Range.pas',
   XLSX4D.Intf.Reader in '..\src\Interfaces\XLSX4D.Intf.Reader.pas',
-  XLSX4D.Intf.Writer in '..\src\Interfaces\XLSX4D.Intf.Writer.pas';
+  XLSX4D.Intf.Writer in '..\src\Interfaces\XLSX4D.Intf.Writer.pas',
+  XLSX4D.Core.Cell in '..\src\Core\XLSX4D.Core.Cell.pas';
 
 end.
