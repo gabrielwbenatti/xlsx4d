@@ -36,6 +36,9 @@ contains
   XLSX4D.Utils.Validators in '..\src\Utils\XLSX4D.Utils.Validators.pas',
   XLSX4D.Intf.Worksheet in '..\src\Interfaces\XLSX4D.Intf.Worksheet.pas',
   XLSX4D.Intf.Workbook in '..\src\Interfaces\XLSX4D.Intf.Workbook.pas',
-  XLSX4D.Intf.Document in '..\src\Interfaces\XLSX4D.Intf.Document.pas';
+  XLSX4D.Intf.Document in '..\src\Interfaces\XLSX4D.Intf.Document.pas',
+  XLSX4D.Intf.Range in '..\src\Interfaces\XLSX4D.Intf.Range.pas',
+  XLSX4D.Intf.Reader in '..\src\Interfaces\XLSX4D.Intf.Reader.pas',
+  XLSX4D.Intf.Writer in '..\src\Interfaces\XLSX4D.Intf.Writer.pas';
 
 end.
