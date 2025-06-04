@@ -43,7 +43,7 @@ type
     // Data operations
     procedure Clear;
     function Find(const AValue: Variant): IXLSX4DCell;
-    function FindAll(const AValur: Variant): TList<IXLSX4DCell>;
+    function FindAll(const AValue: Variant): TList<IXLSX4DCell>;
   end;
 
 implementation

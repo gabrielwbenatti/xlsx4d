@@ -53,7 +53,7 @@ type
 
     procedure Clear;
     function Find(const AValue: Variant): IXLSX4DCell;
-    function FindAll(const AValur: Variant): TList<IXLSX4DCell>;
+    function FindAll(const AValue: Variant): TList<IXLSX4DCell>;
   end;
 
 implementation
@@ -61,7 +61,8 @@ implementation
 uses
   System.SysUtils,
   System.RegularExpressions,
-  System.Math;
+  System.Math,
+  System.Variants;
 
 { TXLSX4DWorksheet }
 
@@ -102,7 +103,9 @@ end;
 
 procedure TXLSX4DWorksheet.Clear;
 begin
-  raise Exception.Create('Not implemented yet');
+  FCells.Clear;
+  FRowCount := 0;
+  FColumnCount := 0;
 end;
 
 function TXLSX4DWorksheet.CoordinatesToCellAddress(ARow,
@@ -150,14 +153,33 @@ begin
   inherited;
 end;
 
-function TXLSX4DWorksheet.Find(const AValue: Variant): IXLSX4DCell;
+function TXLSX4DWorksheet.Find(const AValue: Variant): IXLSX4DCell; 
+var 
+  LCell: TXLSX4DCell;
 begin
-  raise Exception.Create('Not implemented yet');
+  Result := nil;
+
+  for LCell in FCells.Values do
+  begin
+    if (not LCell.IsEmpty) and VarSameValue(LCell.Value, AValue) then
+    begin
+      Result := LCell;
+      Break;
+    end;
+  end;
 end;
 
-function TXLSX4DWorksheet.FindAll(const AValur: Variant): TList<IXLSX4DCell>;
-begin  
-  raise Exception.Create('Not implemented yet');
+function TXLSX4DWorksheet.FindAll(const AValue: Variant): TList<IXLSX4DCell>;
+var 
+  LCell: TXLSX4DCell;
+begin                
+  Result := TList<IXLSX4DCell>.Create;
+
+  for LCell in FCells.Values do
+  begin
+    if (not LCell.IsEmpty) and VarSameValue(LCell.Value, AValue) then
+      Result.Add(LCell)
+  end;                 
 end;
 
 function TXLSX4DWorksheet.GetCell(ARow, AColumn: Integer): IXLSX4DCell;
