@@ -36,6 +36,7 @@ type
     procedure Clear;
     function IsEmpty: Boolean;
     function HasFormula: Boolean;
+    procedure UpdatePosition(const ANewRow, ANewCol: Integer);
   end;
 
 implementation

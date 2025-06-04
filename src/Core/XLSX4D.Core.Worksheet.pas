@@ -322,7 +322,7 @@ begin
     begin
       FCells.Remove(LPair.Key);
       LCell := LPair.Value;
-//      LCell.UpdatePosition(LCell.Row + ACount, LCell.Column); // TODO
+      LCell.UpdatePosition(LCell.Row + ACount, LCell.Column); 
       LNewAddress := CoordinatesToCellAddress(LCell.Row, LCell.Column);
       FCells.Add(LNewAddress, LCell);
     end;

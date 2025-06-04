@@ -19,6 +19,7 @@ type
     function DeterminateDataType(const AValue: Variant): TXLSX4DCellDataType;
     function ColumnNumberToLetter(AColumn: Integer): string;
     procedure UpdateDataType;
+    procedure UpdateFormulaReferences(const AOldRow, AOldColumn, ANewRow, ANewColumn: Integer);
   protected
     function GetRow: Integer;
     function GetColumn: Integer;
@@ -45,6 +46,7 @@ type
     procedure Clear;
     function IsEmpty: Boolean;
     function HasFormula: Boolean;
+    procedure UpdatePosition(const ANewRow, ANewCol: Integer);
   end;
 
 implementation
@@ -200,6 +202,35 @@ begin
     FDataType := ctFormula
   else
     FDataType := DeterminateDataType(FValue);
+end;
+
+procedure TXLSX4DCell.UpdateFormulaReferences(const AOldRow, AOldColumn,
+  ANewRow, ANewColumn: Integer);
+var
+  LOldAddress, LNewAddress: string;
+begin
+  LOldAddress := ColumnNumberToLetter(AOldColumn) + IntToStr(AOldRow);
+  LNewAddress := ColumnNumberToLetter(ANewColumn) + IntToStr(ANewRow);
+
+  if Pos(LOldAddress, FFormula) > 0 then
+    FFormula := StringReplace(FFormula, LOldAddress, LNewAddress, [rfReplaceAll, rfIgnoreCase]);
+end;
+
+procedure TXLSX4DCell.UpdatePosition(const ANewRow, ANewCol: Integer);
+var
+  LOldRow, LOldColumn: Integer;
+begin
+  if (ANewRow < 1) or (ANewCol < 1) then
+    raise Exception.Create('Row and Column must be greater then zero');
+
+  LOldRow := FRow;
+  LOldColumn := FColumn;
+
+  FRow := ANewRow;
+  FColumn := ANewCol;
+
+  if HasFormula then
+    UpdateFormulaReferences(LOldRow, LOldColumn, ANewRow, ANewCol);
 end;
 
 end.
