@@ -73,7 +73,7 @@ begin
     WorksheetName := AName;
   end;
 
-  NewWorksheet := TXLSX4DWorksheet.Create(WorksheetName, FWorksheets.Count);
+  NewWorksheet := TXLSX4DWorksheet.Create(WorksheetName, Self);
   FWorksheets.Add(NewWorksheet);
 
   if FWorksheets.Count = 1 then
@@ -158,11 +158,6 @@ begin
   end;
 
   FWorksheets.Delete(AIndex);
-
-  raise Exception.Create('Worksheet index manipulation not implemented yet');
-  // TODO
-  //  for I := AIndex to FWorksheets.Count - 1 do
-  //    (FWorksheets[I] as TXLSX4DWorksheet).Index := I;
 
   FModified := True;
 end;

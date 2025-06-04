@@ -7,22 +7,24 @@ uses
   XLSX4D.Intf.Worksheet,
   XLSX4D.Intf.Range,
   XLSX4D.Intf.Cell,
+  XLSX4D.Intf.Workbook,
   XLSX4D.Core.Range,
   XLSX4D.Core.Cell;
 
 type
   TXLSX4DWorksheet = class(TInterfacedObject, IXLSX4DWorksheet)
   private
-    FName: string;
-    FIndex: Integer;
+    FName: string; 
     FCells: TObjectDictionary<string, TXLSX4DCell>;
     FRowCount: Integer;
     FColumnCount: Integer;
+    FWorkbook: IXLSX4DWorkbook;
 
     function CellAddressToCoordinates(const AAddress: string; out ARow, AColumn: Integer): Boolean;
     function CoordinatesToCellAddress(ARow, AColumn: Integer): string;
     procedure UpdateDimensions(ARow, AColumn: Integer);
     function GetOrCreateCell(ARow, AColumn: Integer): TXLSX4DCell;
+    function GetIndexFromWorkbook: Integer;
   protected
     function GetName: string;
     function GetIndex: Integer;
@@ -32,7 +34,7 @@ type
 
     procedure SetName(const AValue: string);
   public
-    constructor Create(AName: string; AIndex: Integer);
+    constructor Create(AName: string; AWorkbook: IXLSX4DWorkbook);
     destructor Destroy; override;
 
     property Name: string read GetName write SetName;
@@ -126,12 +128,12 @@ begin
   Result := Result + IntToStr(ARow);
 end;
 
-constructor TXLSX4DWorksheet.Create(AName: string; AIndex: Integer);
+constructor TXLSX4DWorksheet.Create(AName: string; AWorkbook: IXLSX4DWorkbook);
 begin
   inherited Create;
 
   FName := AName;
-  FIndex := AIndex;
+  FWorkbook := AWorkbook;
   FCells := TObjectDictionary<string, TXLSX4DCell>.Create([doOwnsValues]);
   FRowCount := 0;
   FColumnCount := 0;
@@ -289,7 +291,26 @@ end;
 
 function TXLSX4DWorksheet.GetIndex: Integer;
 begin
-  Result := FIndex;
+  Result := GetIndexFromWorkbook;
+end;
+
+function TXLSX4DWorksheet.GetIndexFromWorkbook: Integer;
+var 
+  I: Integer;
+begin        
+  Result := -1;
+
+  if not Assigned(FWorkbook) then
+    Exit;
+
+  for I := 0 to FWorkbook.Worksheets.Count - 1 do
+  begin
+    if FWorkbook.Worksheets[I] = (Self as IXLSX4DWorksheet) then
+    begin
+      Result := I;
+      Break;
+    end;
+  end;
 end;
 
 function TXLSX4DWorksheet.GetName: string;
