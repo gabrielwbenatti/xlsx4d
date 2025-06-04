@@ -138,13 +138,95 @@ begin
 end;
 
 procedure TXLSX4DWorksheet.DeleteColumn(AColumn, ACount: Integer);
-begin
-  raise Exception.Create('Not implemented yet');
+var 
+  LCellsToDelete: TList<string>;
+  LCellsToMove: TList<TPair<string, TXLSX4DCell>>;
+  LPair: TPair<string, TXLSX4DCell>;
+  LNewAddress: string;
+  LCell: TXLSX4DCell;
+  LKey: string;
+begin    
+  if AColumn < 1 then
+    raise Exception.Create('Column number must be greater than zero');
+  if ACount < 1 then
+    raise Exception.Create('Column count must be greater than zero');
+
+  LCellsToDelete := TList<string>.Create;
+  LCellsToMove := TList<TPair<string, TXLSX4DCell>>.Create;
+  try
+    for LPair in FCells do
+    begin
+      if (LPair.Value.Column >= AColumn) and (LPair.Value.Column < AColumn + ACount) then
+        LCellsToDelete.Add(LPair.Key)
+      else if LPair.Value.Column >= AColumn + ACount then
+        LCellsToMove.Add(LPair);  
+    end;
+
+    for LKey in LCellsToDelete do
+      FCells.Remove(LKey);
+
+    for LPair in LCellsToMove do
+    begin
+      FCells.Remove(LPair.Key);
+      LCell := LPair.Value;
+      LCell.UpdatePosition(LCell.Row, LCell.Column - ACount);
+      LNewAddress := CoordinatesToCellAddress(LCell.Row, LCell.Column);
+      FCells.Add(LNewAddress, LCell);
+    end;
+
+    Dec(FColumnCount, ACount);
+    if FColumnCount < 0 then
+      FColumnCount := 0;
+  finally
+    LCellsToDelete.Free;
+    LCellsToMove.Free;
+  end;  
 end;
 
-procedure TXLSX4DWorksheet.DeleteRow(ARow, ACount: Integer);
-begin
-  raise Exception.Create('Not implemented yet');
+procedure TXLSX4DWorksheet.DeleteRow(ARow, ACount: Integer);   
+var 
+  LCellsToDelete: TList<string>;
+  LCellsToMove: TList<TPair<string, TXLSX4DCell>>;
+  LPair: TPair<string, TXLSX4DCell>;
+  LNewAddress: string;
+  LCell: TXLSX4DCell;
+  LKey: string;
+begin   
+  if ARow < 1 then
+    raise Exception.Create('Row number must be greater than zero');
+  if ACount < 1 then
+    raise Exception.Create('Row count must be greater than zero');
+
+  LCellsToDelete := TList<string>.Create;
+  LCellsToMove := TList<TPair<string, TXLSX4DCell>>.Create;
+  try
+    for LPair in FCells do
+    begin
+      if (LPair.Value.Row >= ARow) and (LPair.Value.Row < ARow + ACount) then
+        LCellsToDelete.Add(LPair.Key)
+      else if LPair.Value.Row >= ARow + ACount then
+        LCellsToMove.Add(LPair);  
+    end;
+
+    for LKey in LCellsToDelete do
+      FCells.Remove(LKey);
+
+    for LPair in LCellsToMove do                        
+    begin
+      FCells.Remove(LPair.Key);
+      LCell := LPair.Value;
+      LCell.UpdatePosition(LCell.Row - ACount, LCell.Column);
+      LNewAddress := CoordinatesToCellAddress(LCell.Row, LCell.Column);
+      FCells.Add(LNewAddress, LCell);
+    end;
+
+    Dec(FRowCount, ACount);
+    if FRowCount < 0 then
+      FRowCount := 0;
+  finally
+    LCellsToDelete.Free;
+    LCellsToMove.Free;
+  end;  
 end;
 
 destructor TXLSX4DWorksheet.Destroy;
@@ -271,9 +353,9 @@ begin
     raise Exception.Create('Coordinates must be greater than zero');
 
   if AStartRow > AEndRow then
-    raise Exception.Create('The starting line cannot be greater than ending line');
+    raise Exception.Create('Starting line cannot be greater than ending line');
   if AStartCol > AEndCol then
-    raise Exception.Create('The starting column cannot be greater than ending column');
+    raise Exception.Create('Starting column cannot be greater than ending column');
 
   Result := TXLSX4DRange.Create(AStartRow, AStartCol, AEndRow, AEndCol);
 end;
@@ -316,8 +398,38 @@ begin
 end;
 
 procedure TXLSX4DWorksheet.InsertColumn(AColumn, ACount: Integer);
+var 
+  LCellsToMove: TList<TPair<string, TXLSX4DCell>>;
+  LPair: TPair<string, TXLSX4DCell>;
+  LNewAddress: string;
+  LCell: TXLSX4DCell;
 begin
-  raise Exception.Create('Not implemented yet');
+  if AColumn < 1 then
+    raise Exception.Create('Column number must be greater than zero');
+  if ACount < 1 then
+    raise Exception.Create('Column count must be greater than zero');
+
+  LCellsToMove := TList<TPair<string, TXLSX4DCell>>.Create;
+  try                 
+    for LPair in FCells do
+    begin
+      if LPair.Value.Column = AColumn then
+        LCellsToMove.Add(LPair);
+    end;
+
+    for LPair in LCellsToMove do
+    begin
+      FCells.Remove(LPair.Key);
+      LCell := LPair.Value;
+      LCell.UpdatePosition(LCell.Row, LCell.Column + ACount);
+      LNewAddress := CoordinatesToCellAddress(LCell.Row, LCell.Column);
+      FCells.Add(LNewAddress, LCell);
+    end;
+
+    Inc(FColumnCount, ACount);
+  finally
+    LCellsToMove.Free;
+  end;
 end;
 
 procedure TXLSX4DWorksheet.InsertRow(ARow, ACount: Integer);
