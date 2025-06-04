@@ -42,6 +42,7 @@ contains
   XLSX4D.Core.Cell in '..\src\Core\XLSX4D.Core.Cell.pas',
   XLSX4D.Core.Range in '..\src\Core\XLSX4D.Core.Range.pas',
   XLSX4D.Core.Worksheet in '..\src\Core\XLSX4D.Core.Worksheet.pas',
-  XLSX4D.Core.Workbook in '..\src\Core\XLSX4D.Core.Workbook.pas';
+  XLSX4D.Core.Workbook in '..\src\Core\XLSX4D.Core.Workbook.pas',
+  XLSX4D.Core.Writer in '..\src\Core\XLSX4D.Core.Writer.pas';
 
 end.
