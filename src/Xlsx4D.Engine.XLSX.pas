@@ -111,19 +111,27 @@ end;
 function TXLSXEngine.ParseXMLValue(const AXMLContent, ATagName: string): string;
 var
   StartTag, EndTag: string;
-  StartPos, EndPos: Integer;
+  StartPos, EndPos, TagEndPos: Integer;
 begin
   Result := '';
-  StartTag := '<' + ATagName + '>';
+
+  // Look for the opening tag (it may have attributes).
+  StartTag := '<' + ATagName;
   EndTag := '</' + ATagName + '>';
-  
+
   StartPos := Pos(StartTag, AXMLContent);
   if StartPos > 0 then
   begin
-    StartPos := StartPos + Length(StartTag);
-    EndPos := PosEx(EndTag, AXMLContent, StartPos);
-    if EndPos > StartPos then
-      Result := Copy(AXMLContent, StartPos, EndPos - StartPos);
+    // Find the end of the opening tag (look for '>')
+    TagEndPos := PosEx('>', AXMLContent, StartPos);
+
+    if TagEndPos > 0 then
+    begin
+      StartPos := TagEndPos + 1; // Position after the '>'
+      EndPos := PosEx(EndTag, AXMLContent, StartPos);
+      if EndPos > StartPos then
+        Result := Copy(AXMLContent, StartPos, EndPos - StartPos);
+    end;
   end;
 end;
 
@@ -145,7 +153,7 @@ begin
     EndPos := PosEx(AEndTag, AXMLContent, StartPos + Length(AStartTag));
     if EndPos = 0 then
       Break;
-    
+
     TagContent := Copy(AXMLContent, StartPos, (EndPos + Length(AEndTag)) - StartPos);
     Result.Add(TagContent);
     
