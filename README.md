@@ -27,7 +27,7 @@
 ### Via Boss
 
 ```bash
-boss install github.com/benattidev1/xlsx4d
+boss install github.com/gabrielwbenatti/xlsx4d
 ```
 
 ## 💡 Uso Rápido

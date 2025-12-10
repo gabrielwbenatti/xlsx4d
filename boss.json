@@ -2,7 +2,7 @@
 	"name": "xlsx4d",
 	"description": "Biblioteca Delphi de Arquivos de Planilha",
 	"version": "1.1.1",
-	"homepage": "https://github.com/benattidev1/xlsx4d",
+	"homepage": "https://github.com/gabrielwbenatti/xlsx4d",
 	"mainsrc": "src/",
 	"projects": [],
 	"dependencies": {}
