@@ -28,8 +28,7 @@ package XLSX4D;
 {$IMPLICITBUILD ON}
 
 requires
-  rtl,
-  xmlrtl;
+  rtl;
 
 contains
   Xlsx4D in '..\src\Xlsx4D.pas',
