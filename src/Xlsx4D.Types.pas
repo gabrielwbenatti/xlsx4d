@@ -16,15 +16,18 @@ type
     Value: Variant;
     CellType: TCellType;
     FormattedValue: string;
+    Formula: string;
 
     class function Empty(ARow, ACol: Integer): TCell; static;
     class function Create(ARow, ACol: Integer; const AValue: Variant; ACellType: TCellType = ctString): TCell; static;
+    class function CreateWithFormula(ARow, ACol: Integer; const AValue: Variant; const AFormula: string): TCell; static;
     function IsEmpty: Boolean;
     function AsString: string;
     function AsInteger: Integer;
     function AsFloat: Double;
     function AsBoolean: Boolean;
     function AsDateTime: TDateTime;
+    function HasFormula: Boolean;
   end;
 
   TRowCells = TList<TCell>;
@@ -131,11 +134,28 @@ begin
   Result.Value := AValue;
   Result.CellType := ACellType;
   Result.FormattedValue := VarToStrDef(AValue, '');
+  Result.Formula := '';
+end;
+
+class function TCell.CreateWithFormula(ARow, ACol: Integer;
+  const AValue: Variant; const AFormula: string): TCell;
+begin
+  Result.Row := ARow;
+  Result.Col := ACol;
+  Result.Value := AValue;
+  Result.CellType := ctFormula;
+  Result.FormattedValue := VarToStrDef(AValue, '');
+  Result.Formula := AFormula;
 end;
 
 class function TCell.Empty(ARow, ACol: Integer): TCell;
 begin
   Result := TCell.Create(ARow, ACol, Null, ctEmpty);
+end;
+
+function TCell.HasFormula: Boolean;
+begin
+  Result := (Formula <> '') and (CellType <> ctFormula);
 end;
 
 function TCell.IsEmpty: Boolean;

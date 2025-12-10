@@ -268,7 +268,7 @@ var
   XMLContent: string;
   RowTags, CellTags: TStringList;
   I, J: Integer;
-  CellRef, CellType, CellValue: string;
+  CellRef, CellType, CellValue, CellFormula: string;
   Row, Col: Integer;
   Cell: TCell;
   NumValue: Double;
@@ -295,11 +295,17 @@ begin
             CellRef := ParseXMLAttribute(CellTag, 'r');
             CellType := ParseXMLAttribute(CellTag, 't');
             CellValue := ParseXMLValue(CellTag, 'v');
-            
+            CellFormula := ParseXMLValue(CellTag, 'f');
+
             if not ParseCellReference(CellRef, Row, Col) then
               Continue;
-            
-            if CellType = 's' then
+
+            if CellFormula <> '' then
+            begin
+              // Formula
+              Cell := TCell.CreateWithFormula(Row, Col, CellValue, CellFormula);
+            end
+            else if CellType = 's' then
             begin
               // String compartilhada
               Cell := TCell.Create(Row, Col, GetSharedString(StrToIntDef(CellValue, 0)), ctString);
@@ -332,7 +338,7 @@ begin
               // Célula vazia
               Cell := TCell.Empty(Row, Col);
             end;
-            
+
             AWorksheet.AddCell(Cell);
           end;
         finally
