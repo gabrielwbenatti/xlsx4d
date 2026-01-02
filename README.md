@@ -54,7 +54,7 @@ begin
       ShowMessage(Cell.AsString);
       
       // Ler célula B2 (linha 2, coluna 2)
-      Cell := Sheet[2, 2];
+      Cell := CellsByRef[2, 'B'];
       ShowMessage('Valor: ' + Cell.AsString);
     end;
   finally
