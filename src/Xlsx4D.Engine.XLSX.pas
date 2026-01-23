@@ -138,26 +138,50 @@ end;
 function TXLSXEngine.ExtractAllBetweenTags(const AXMLContent, AStartTag, AEndTag: string): TStringList;
 var
   CurrentPos: Integer;
-  StartPos, EndPos: Integer;
+  StartPos, OpenEndPos, EndPos: Integer;
   TagContent: string;
 begin
   Result := TStringList.Create;
   CurrentPos := 1;
-  
+
   while True do
   begin
     StartPos := PosEx(AStartTag, AXMLContent, CurrentPos);
     if StartPos = 0 then
       Break;
-    
-    EndPos := PosEx(AEndTag, AXMLContent, StartPos + Length(AStartTag));
-    if EndPos = 0 then
+
+    // Find the end of the opening tag (eg.: <c ...>)
+    OpenEndPos := PosEx('>', AXMLContent, StartPos);
+    if OpenEndPos = 0 then
       Break;
 
-    TagContent := Copy(AXMLContent, StartPos, (EndPos + Length(AEndTag)) - StartPos);
+    // Check if it's self-closing (eg.: <c .../>)
+    if (AXMLContent[OpenEndPos - 1] = '/') then
+    begin
+      // (ex.: <c .../>)
+      TagContent := Copy(
+        AXMLContent,
+        StartPos,
+        OpenEndPos - StartPos + 1
+      );
+      CurrentPos := OpenEndPos + 1;
+    end
+    else
+    begin
+      // (ex.: <c ...> ... </c>)
+      EndPos := PosEx(AEndTag, AXMLContent, OpenEndPos);
+      if EndPos = 0 then
+        Break;
+
+      TagContent := Copy(
+        AXMLContent,
+        StartPos,
+        (EndPos + Length(AEndTag)) - StartPos
+      );
+      CurrentPos := EndPos + Length(AEndTag);
+    end;
+
     Result.Add(TagContent);
-    
-    CurrentPos := EndPos + Length(AEndTag);
   end;
 end;
 
