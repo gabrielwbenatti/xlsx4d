@@ -297,11 +297,15 @@ var
   Cell: TCell;
   NumValue: Double;
   CellTag: string;
+  FormatSettings: TFormatSettings;
 begin
   SheetDataPath := TPath.Combine(FTempPath, Format('xl\worksheets\sheet%d.xml', [ASheetIndex]));
   
   if not TFile.Exists(SheetDataPath) then
     Exit;
+
+  FormatSettings := TFormatSettings.Create('en-US');
+  FormatSettings.DecimalSeparator := '.';
   
   try
     XMLContent := TFile.ReadAllText(SheetDataPath, TEncoding.UTF8);
@@ -346,7 +350,7 @@ begin
             else if CellValue <> '' then
             begin
               // Número ou data
-              if TryStrToFloat(CellValue, NumValue) then
+              if TryStrToFloat(CellValue, NumValue, FormatSettings) then
                 Cell := TCell.Create(Row, Col, NumValue, ctNumber)
               else
                 Cell := TCell.Create(Row, Col, CellValue, ctString);
