@@ -8,7 +8,7 @@ uses
 type
   TXMLAttribute = record
     Name: string;
-    Value: Variant;
+    Value: string;
   end;
 
   TXMLNode = class
@@ -45,7 +45,7 @@ type
     FPosition: Integer;
     FLength: Integer;
 
-    function CurrentChat: Char;
+    function CurrentChar: Char;
     function PeekChar(AOffset: Integer = 1): Char;
     procedure SkipWhitespace;
     procedure Advance(ACount: Integer = 1);
@@ -128,7 +128,7 @@ begin
 
 end;
 
-function TXMLParser.CurrentChat: Char;
+function TXMLParser.CurrentChar: Char;
 begin
 
 end;
