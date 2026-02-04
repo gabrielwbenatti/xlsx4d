@@ -7,7 +7,8 @@ uses
   System.SysUtils,
   System.Zip,
   System.Generics.Collections,
-  Xlsx4D.Types;
+  Xlsx4D.Types,
+  Xlsx4D.XML.Parser;
 
 type
   TXLSXEngine = class
@@ -25,11 +26,6 @@ type
     function ParseCellReference(const ACellRef: string; out ARow, ACol: Integer): Boolean;
     function GetSharedString(AIndex: Integer): string;
     procedure Cleanup;
-    
-    // Helpers para parsing XML
-    function ParseXMLAttribute(const AXMLLine, AAttrName: string): string;
-    function ParseXMLValue(const AXMLContent, ATagName: string): string;
-    function ExtractAllBetweenTags(const AXMLContent, AStartTag, AEndTag: string): TStringList;
   public
     constructor Create;
     destructor Destroy; override;
@@ -89,109 +85,15 @@ begin
   end;
 end;
 
-function TXLSXEngine.ParseXMLAttribute(const AXMLLine, AAttrName: string): string;
-var
-  StartPos, EndPos: Integer;
-  SearchStr: string;
-begin
-  Result := '';
-   
-  SearchStr := AAttrName + '="';
-  StartPos := Pos(SearchStr, AXMLLine);
-  
-  if StartPos > 0 then
-  begin
-    StartPos := StartPos + Length(SearchStr);
-    EndPos := PosEx('"', AXMLLine, StartPos);
-    if EndPos > StartPos then
-      Result := Copy(AXMLLine, StartPos, EndPos - StartPos);
-  end;
-end;
-
-function TXLSXEngine.ParseXMLValue(const AXMLContent, ATagName: string): string;
-var
-  StartTag, EndTag: string;
-  StartPos, EndPos, TagEndPos: Integer;
-begin
-  Result := '';
-
-  // Look for the opening tag (it may have attributes).
-  StartTag := '<' + ATagName;
-  EndTag := '</' + ATagName + '>';
-
-  StartPos := Pos(StartTag, AXMLContent);
-  if StartPos > 0 then
-  begin
-    // Find the end of the opening tag (look for '>')
-    TagEndPos := PosEx('>', AXMLContent, StartPos);
-
-    if TagEndPos > 0 then
-    begin
-      StartPos := TagEndPos + 1; // Position after the '>'
-      EndPos := PosEx(EndTag, AXMLContent, StartPos);
-      if EndPos > StartPos then
-        Result := Copy(AXMLContent, StartPos, EndPos - StartPos);
-    end;
-  end;
-end;
-
-function TXLSXEngine.ExtractAllBetweenTags(const AXMLContent, AStartTag, AEndTag: string): TStringList;
-var
-  CurrentPos: Integer;
-  StartPos, OpenEndPos, EndPos: Integer;
-  TagContent: string;
-begin
-  Result := TStringList.Create;
-  CurrentPos := 1;
-
-  while True do
-  begin
-    StartPos := PosEx(AStartTag, AXMLContent, CurrentPos);
-    if StartPos = 0 then
-      Break;
-
-    // Find the end of the opening tag (eg.: <c ...>)
-    OpenEndPos := PosEx('>', AXMLContent, StartPos);
-    if OpenEndPos = 0 then
-      Break;
-
-    // Check if it's self-closing (eg.: <c .../>)
-    if (AXMLContent[OpenEndPos - 1] = '/') then
-    begin
-      // (ex.: <c .../>)
-      TagContent := Copy(
-        AXMLContent,
-        StartPos,
-        OpenEndPos - StartPos + 1
-      );
-      CurrentPos := OpenEndPos + 1;
-    end
-    else
-    begin
-      // (ex.: <c ...> ... </c>)
-      EndPos := PosEx(AEndTag, AXMLContent, OpenEndPos);
-      if EndPos = 0 then
-        Break;
-
-      TagContent := Copy(
-        AXMLContent,
-        StartPos,
-        (EndPos + Length(AEndTag)) - StartPos
-      );
-      CurrentPos := EndPos + Length(AEndTag);
-    end;
-
-    Result.Add(TagContent);
-  end;
-end;
-
 procedure TXLSXEngine.LoadSharedStrings;
 var
   SharedStringsPath: string;
   XMLContent: string;
-  SITags: TStringList;
+  Parser: TXMLParser;
+  Root: TXMLNode;
+  SINodes: TObjectList<TXMLNode>;
   I: Integer;
-  TValue: string;
+  TNode: TXMLNode;
 begin
   FSharedStrings.Clear;
   
@@ -199,26 +101,40 @@ begin
   
   if not TFile.Exists(SharedStringsPath) then
     Exit;
-  
+
+  Parser := TXMLParser.Create;
   try
-    XMLContent := TFile.ReadAllText(SharedStringsPath, TEncoding.UTF8);
-    
-    SITags := ExtractAllBetweenTags(XMLContent, '<si>', '</si>');
     try
-      for I := 0 to SITags.Count - 1 do
-      begin
-        TValue := ParseXMLValue(SITags[I], 't');
-        FSharedStrings.Add(TValue);
+      XMLContent := TFile.ReadAllText(SharedStringsPath, TEncoding.UTF8);
+
+      Root := Parser.Parse(XMLContent);
+      try
+        SINodes := TXMLHelper.FindNodesByName(Root, 'si');
+        try
+          for I := 0 to SINodes.Count - 1 do
+          begin
+            // try frind <t> within <si>
+            TNode := SINodes[I].FindNode('t');
+            if TNode <> nil then
+              FSharedStrings.Add(TNode.Value)
+            else
+              FSharedStrings.Add(''); // empty str
+          end;
+        finally
+          SINodes.Free;
+        end;
+      finally
+        Root.Free;
       end;
-    finally
-      SITags.Free;
+    except
+      on E: Exception do
+        raise EXlsx4DException.CreateFmt(
+          'Failed to load shared strings: %s',
+          [E.Message]
+        );
     end;
-  except
-    on E: Exception do
-      raise EXlsx4DException.CreateFmt(
-        'Failed to load shared strings: %s',
-        [E.Message]
-      );
+  finally
+    Parser.Free;
   end;
 end;
 
@@ -226,7 +142,9 @@ procedure TXLSXEngine.LoadWorksheets;
 var
   WorkbookPath: string;
   XMLContent: string;
-  SheetTags: TStringList;
+  Parser: TXMLParser;
+  Root: TXMLNode;
+  SheetNodes: TObjectList<TXMLNode>;
   I: Integer;
   SheetName: string;
   Worksheet: TWorksheet;
@@ -235,53 +153,43 @@ begin
   
   if not TFile.Exists(WorkbookPath) then
     raise EXlsx4DException.Create('workbook.xml not found in XLSX package.');
-  
+
+  Parser := TXMLParser.Create;
   try
-    XMLContent := TFile.ReadAllText(WorkbookPath, TEncoding.UTF8);
-    
-    SheetTags := TStringList.Create;
     try
-      var CurrentPos := 1;
-      while True do
-      begin
-        var StartPos := PosEx('<sheet ', XMLContent, CurrentPos);
-        if StartPos = 0 then
-          Break;
-        
-        var EndPos := PosEx('/>', XMLContent, StartPos);
-        if EndPos = 0 then
-          EndPos := PosEx('>', XMLContent, StartPos);
-        
-        if EndPos = 0 then
-          Break;
-        
-        var SheetTag := Copy(XMLContent, StartPos, (EndPos + 2) - StartPos);
-        SheetTags.Add(SheetTag);
-        
-        CurrentPos := EndPos + 2;
-      end;
-      
-      for I := 0 to SheetTags.Count - 1 do
-      begin
-        SheetName := ParseXMLAttribute(SheetTags[I], 'name');
-        
-        if SheetName <> '' then
-        begin
-          Worksheet := TWorksheet.Create(SheetName);
-          FWorksheets.Add(Worksheet);
-          
-          LoadWorksheetData(SheetName, Worksheet, I + 1);
+      XMLContent := TFile.ReadAllText(WorkbookPath, TEncoding.UTF8);
+
+      Root := Parser.Parse(XMLContent);
+      try
+        SheetNodes := TXMLHelper.FindNodesByName(Root, 'sheet');
+        try
+          for I := 0 to SheetNodes.Count - 1 do
+          begin
+            SheetName := SheetNodes[I].Attribute['name'];
+
+            if SheetName <> '' then
+            begin
+              Worksheet := TWorksheet.Create(SheetName);
+              FWorksheets.Add(Worksheet);
+
+              LoadWorksheetData(SheetName, Worksheet, I + 1);
+            end;
+          end;
+        finally
+          SheetNodes.Free;
         end;
+      finally
+        Root.Free;
       end;
-    finally
-      SheetTags.Free;
+    except
+      on E: Exception do
+        raise EXlsx4DException.CreateFmt(
+          'Failed to load worksheets: %s',
+          [E.Message]
+        );
     end;
-  except
-    on E: Exception do
-      raise EXlsx4DException.CreateFmt(
-        'Failed to load worksheets: %s',
-        [E.Message]
-      );
+  finally
+    Parser.Free;
   end;
 end;
 
@@ -290,13 +198,15 @@ procedure TXLSXEngine.LoadWorksheetData(const ASheetName: string;
 var
   SheetDataPath: string;
   XMLContent: string;
-  RowTags, CellTags: TStringList;
+  Parser: TXMLParser;
+  Root: TXMLNode;
+  RowNodes, CellNodes: TObjectList<TXMLNode>;
   I, J: Integer;
   CellRef, CellType, CellValue: string;
   Row, Col: Integer;
   Cell: TCell;
   NumValue: Double;
-  CellTag: string;
+  CellNode, ValueNode: TXMLNode;
   FormatSettings: TFormatSettings;
 begin
   SheetDataPath := TPath.Combine(FTempPath, Format('xl\worksheets\sheet%d.xml', [ASheetIndex]));
@@ -306,76 +216,109 @@ begin
 
   FormatSettings := TFormatSettings.Create('en-US');
   FormatSettings.DecimalSeparator := '.';
-  
+
+  Parser := TXMLParser.Create;
   try
-    XMLContent := TFile.ReadAllText(SheetDataPath, TEncoding.UTF8);
-    
-    RowTags := ExtractAllBetweenTags(XMLContent, '<row ', '</row>');
     try
-      for I := 0 to RowTags.Count - 1 do
-      begin
-        CellTags := ExtractAllBetweenTags(RowTags[I], '<c ', '</c>');
+      XMLContent := TFile.ReadAllText(SheetDataPath, TEncoding.UTF8);
+
+      Root := Parser.Parse(XMLContent);
+      try
+        RowNodes := TXMLHelper.FindNodesByName(Root, 'row');
         try
-          for J := 0 to CellTags.Count - 1 do
+          for I := 0 to RowNodes.Count - 1 do
           begin
-            CellTag := CellTags[J];
-            
-            CellRef := ParseXMLAttribute(CellTag, 'r');
-            CellType := ParseXMLAttribute(CellTag, 't');
-            CellValue := ParseXMLValue(CellTag, 'v');
-            
-            if not ParseCellReference(CellRef, Row, Col) then
-              Continue;
-            
-            if CellType = 's' then
-            begin
-              // String compartilhada
-              Cell := TCell.Create(Row, Col, GetSharedString(StrToIntDef(CellValue, 0)), ctString);
-            end
-            else if CellType = 'str' then
-            begin
-              // String inline
-              Cell := TCell.Create(Row, Col, CellValue, ctString);
-            end
-            else if CellType = 'b' then
-            begin
-              // Boolean
-              Cell := TCell.Create(Row, Col, CellValue = '1', ctBoolean);
-            end
-            else if CellType = 'e' then
-            begin
-              // Error
-              Cell := TCell.Create(Row, Col, CellValue, ctError);
-            end
-            else if CellValue <> '' then
-            begin
-              // Número ou data
-              if TryStrToFloat(CellValue, NumValue, FormatSettings) then
-                Cell := TCell.Create(Row, Col, NumValue, ctNumber)
-              else
-                Cell := TCell.Create(Row, Col, CellValue, ctString);
-            end
-            else
-            begin
-              // Célula vazia
-              Cell := TCell.Empty(Row, Col);
+            CellNodes := TObjectList<TXMLNode>.Create(False);
+            try
+              RowNodes[I].FindNodes('c', CellNodes);
+
+              for J := 0 to CellNodes.Count - 1 do
+              begin
+                CellNode := CellNodes[J];
+
+                CellRef := CellNode.Attribute['r'];
+                CellType := CellNode.Attribute['t'];
+
+                // find <v> node for value
+                ValueNode := CellNode.FindNode('v');
+                if ValueNode <> nil then
+                  CellValue := ValueNode.Value
+                else
+                  CellValue := '';
+
+                if not ParseCellReference(CellRef, Row, Col) then
+                  Continue;
+
+                if CellType = 's' then
+                begin
+                  // shared strings
+                  Cell := TCell.Create(Row, Col, GetSharedString(StrToIntDef(CellValue, 0)), ctString);
+                end
+                else if CellType = 'str' then
+                begin
+                  // inline string
+                  Cell := TCell.Create(Row, Col, CellValue, ctString);
+                end
+                else if CellType = 'inlineStr' then
+                begin
+                  // inline string (check <is><t> structure
+                  var ISNode := CellNode.FindNode('is');
+                  if ISNode <> nil then
+                  begin
+                    var TNode := ISNode.FindNode('t');
+                    if TNode <> nil then
+                      Cell := TCell.Create(Row, Col, TNode.Value, ctString)
+                    else
+                      Cell := TCell.Create(Row, Col, CellValue, ctString);
+                  end
+                  else
+                    Cell := TCell.Create(Row, Col, CellValue, ctString);
+                end
+                else if CellType = 'b' then
+                begin
+                  // boolean
+                  Cell := TCell.Create(Row, Col, CellValue = '1', ctBoolean);
+                end
+                else if CellType = 'e' then
+                begin
+                  // error
+                  Cell := TCell.Create(Row, Col, CellValue, ctError);
+                end
+                else if CellValue <> '' then
+                begin
+                  // number or date
+                  if TryStrToFloat(CellValue, NumValue, FormatSettings) then
+                    Cell := TCell.Create(Row, Col, NumValue, ctNumber)
+                  else
+                    Cell := TCell.Create(Row, Col, CellValue, ctString);
+                end
+                else
+                begin
+                  // empty cell
+                  Cell := TCell.Empty(Row, Col);
+                end;
+
+                AWorksheet.AddCell(Cell);
+              end;
+            finally
+              CellNodes.Free;
             end;
-            
-            AWorksheet.AddCell(Cell);
           end;
         finally
-          CellTags.Free;
+          RowNodes.Free;
         end;
+      finally
+        Root.Free;
       end;
-    finally
-      RowTags.Free;
+    except
+      on E: Exception do
+        raise EXlsx4DException.CreateFmt(
+          'Failed to load worksheet data for sheet "%s": %s',
+          [ASheetName, E.Message]
+        );
     end;
-  except
-    on E: Exception do
-      raise EXlsx4DException.CreateFmt(
-        'Failed to load worksheet data for sheet "%s": %s',
-        [ASheetName, E.Message]
-      );
+  finally
+    Parser.Free;
   end;
 end;
 
