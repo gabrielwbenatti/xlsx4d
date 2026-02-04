@@ -20,7 +20,7 @@
 - Delphi 10.3 Rio ou superior
 - Windows (32-bit ou 64-bit)
 
-> **Nota:** A biblioteca usa apenas componentes nativos do Delphi (RTL e XML RTL), sem dependências externas.
+> **Nota:** A biblioteca usa apenas componentes nativos do Delphi (RTL), sem dependências externas.
 
 ## 🚀 Instalação
 
