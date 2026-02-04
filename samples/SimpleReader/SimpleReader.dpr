@@ -1,4 +1,4 @@
-program SimpleReader;
+﻿program SimpleReader;
 
 {$APPTYPE CONSOLE}
 
@@ -9,7 +9,8 @@ uses
   System.TypInfo,
   Xlsx4D in '..\..\src\Xlsx4D.pas',
   Xlsx4D.Types in '..\..\src\Xlsx4D.Types.pas',
-  Xlsx4D.Engine.XLSX in '..\..\src\Xlsx4D.Engine.XLSX.pas';
+  Xlsx4D.Engine.XLSX in '..\..\src\Xlsx4D.Engine.XLSX.pas',
+  Xlsx4D.XML.Parser in '..\..\src\Xlsx4D.XML.Parser.pas';
 
 procedure Op0_Exit;
 begin
