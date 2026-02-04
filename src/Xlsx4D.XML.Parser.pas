@@ -31,8 +31,8 @@ type
 
     property Name: string read FName write FName;
     property Value: string read FValue write FValue;
-    property Attributes: TList<TXMLAttribute> read FAttributes write FAttributes;
-    property Children: TObjectList<TXMLNode> read FChildren write FChildren;
+    property Attributes: TList<TXMLAttribute> read FAttributes;
+    property Children: TObjectList<TXMLNode> read FChildren;
     property Parent: TXMLNode read FParent write FParent;
     property Attribute[const AName: string]: string read GetAttribute;
     property ChildCount: Integer read GetChildCount;
@@ -64,6 +64,7 @@ type
   end;
 
   TXMLHelper = class
+  public
     class function GetNodeValue(ANode: TXMLNode; const APath: string): string;
     class function GetNodeAttribute(ANode: TXMLNode; const APath, AAttribute: string): string;
     class function FindNodesByName(ANode: TXMLNode; const AName: string): TObjectList<TXMLNode>;
@@ -174,7 +175,7 @@ begin
   if FPosition <= FLength then
     Result := FContent[FPosition]
   else
-    result := #0;
+    Result := #0;
 end;
 
 function TXMLParser.PeekChar(AOffset: Integer): Char;
@@ -245,8 +246,7 @@ end;
 
 function TXMLParser.DecodeXMLEntities(const AValue: string): string;
 var
-  Pos, EndPos, CharCode: Integer;
-  EntityStr: string;
+  CharCode: Integer;
 begin
   Result := AValue;
   Result := StringReplace(Result, '&lt;', '<', [rfReplaceAll]);
@@ -255,15 +255,16 @@ begin
   Result := StringReplace(Result, '&apos;', '''', [rfReplaceAll]);
   Result := StringReplace(Result, '&amp;', '&', [rfReplaceAll]);
 
-  Pos := 1;
+  // decode numeric entities &#nnn; and &#xHHH;
+  var Pos := 1;
   while Pos <= Length(Result) do
   begin
     if (Result[Pos] = '&') and (Pos < Length(Result)) and (Result[Pos + 1] = '#') then
     begin
-      EndPos := PosEx(';', Result, Pos);
+      var EndPos := PosEx(';', Result, Pos);
       if EndPos > Pos then
       begin
-        EntityStr := Copy(Result, Pos + 2, EndPos - Pos - 2);
+        var EntityStr := Copy(Result, Pos + 2, EndPos - Pos - 2);
 
         if (Length(EntityStr) > 0) and (EntityStr[1] = 'x') then
         begin
@@ -284,8 +285,8 @@ begin
           end;
         end;
       end;
-      Inc(Pos);
     end;
+    Inc(Pos);
   end;
 end;
 
@@ -303,6 +304,7 @@ begin
 
   while (not IsEndOfContent) and (CurrentChar <> '>') and (CurrentChar <> '/') do
   begin
+    // read attribute name
     AttrName := '';
     while (not IsEndOfContent) and
           (not CharInSet(CurrentChar, [' ', '=', '>', '/', #9, #10, #13])) do
@@ -334,7 +336,7 @@ end;
 
 function TXMLParser.ParseNode: TXMLNode;
 var
-  Node, ChildNode: TXMLNode;
+  Node: TXMLNode;
   NodeName, EndTagName, TextContent: string;
   IsSelfClosing, IsTextNode: Boolean;
 begin
@@ -375,6 +377,7 @@ begin
 
   Node := TXMLNode.Create;
 
+  // read node name
   NodeName := '';
   while (not IsEndOfContent) and
         (not CharInSet(CurrentChar, [' ', '>', '/', #9, #10, #13])) do
@@ -414,12 +417,11 @@ begin
       Break;
 
     // check closing tag
-    if (CurrentChar <> '<') and (PeekChar(1) = '/') then
+    if (CurrentChar = '<') and (PeekChar(1) = '/') then
     begin
       Advance(2); // skip '</'
       EndTagName := '';
-
-      while (not IsEndOfContent) and (CurrentChar <>  '>') do
+      while (not IsEndOfContent) and (CurrentChar <> '>') do
       begin
         EndTagName := EndTagName + CurrentChar;
         Advance(1);
@@ -445,25 +447,25 @@ begin
     // parse child
     if CurrentChar = '<' then
     begin
-      ChildNode := ParseNode;
+      var ChildNode := ParseNode;
       if ChildNode <> nil then
       begin
         ChildNode.Parent := Node;
         Node.Children.Add(ChildNode);
-      end
-      else
-      begin
-        // read content
-        TextContent := '';
-        while (not IsEndOfContent) and (CurrentChar <> '<') do
-        begin
-          TextContent := TextContent + CurrentChar;
-          Advance(1);
-        end;
-
-        if TextContent <> '' then
-          Node.Value := Node.Value + DecodeXMLEntities(Trim(TextContent));
       end;
+    end
+    else
+    begin
+      // read content
+      TextContent := '';
+      while (not IsEndOfContent) and (CurrentChar <> '<') do
+      begin
+        TextContent := TextContent + CurrentChar;
+        Advance(1);
+      end;
+
+      if TextContent <> '' then
+        Node.Value := Node.Value + DecodeXMLEntities(Trim(TextContent));
     end;
   end;
 
@@ -471,8 +473,6 @@ begin
 end;
 
 function TXMLParser.Parse(const AXMLContent: string): TXMLNode;
-var
-  Node: TXMLNode;
 begin
   FContent := AXMLContent;
   FPosition := 1;
@@ -488,7 +488,7 @@ begin
     if IsEndOfContent then
       Break;
 
-    Node := ParseNode;
+    var Node := ParseNode;
     if Node <> nil then
     begin
       Node.Parent := Result;
@@ -499,8 +499,6 @@ end;
 
 function TXMLParser.ParseFragment(
   const AXMLContent: string): TObjectList<TXMLNode>;
-var
-  Node: TXMLNode;
 begin
   FContent := AXMLContent;
   FPosition := 1;
@@ -515,7 +513,7 @@ begin
     if IsEndOfContent then
       Break;
 
-    Node := ParseNode;
+    var Node := ParseNode;
     if Node <> nil then
       Result.Add(Node);
   end;
