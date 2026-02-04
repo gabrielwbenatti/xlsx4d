@@ -185,6 +185,7 @@
         <DCCReference Include="..\src\Xlsx4D.Types.pas"/>
         <DCCReference Include="..\src\Xlsx4D.Engine.XLSX.pas"/>
         <DCCReference Include="..\src\Xlsx4D.Engine.XLS.pas"/>
+        <DCCReference Include="..\src\Xlsx4D.XML.Parser.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -240,6 +241,12 @@
                 </DeployFile>
                 <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\XLSX4D.bpl" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
+                        <RemoteName>XLSX4D.bpl</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\Win64\XLSX4D.bpl" Configuration="Release" Class="ProjectOutput">
+                    <Platform Name="Win64">
                         <RemoteName>XLSX4D.bpl</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
