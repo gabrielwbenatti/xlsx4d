@@ -243,8 +243,13 @@ begin
 end;
 
 procedure TWorksheet.SetCell(ARow, ACol: Integer; const Value: TCell);
+var
+  AdjustedCell: TCell;
 begin
-  AddCell(Value);
+  AdjustedCell := Value;
+  AdjustedCell.Row := ARow;
+  AdjustedCell.Col := ACol;
+  AddCell(AdjustedCell);
 end;
 
 class function TWorksheet.ColRefToNumber(const AColRef: string): Integer;
