@@ -83,12 +83,20 @@ end;
 
 function TCell.AsDateTime: TDateTime;
 begin
+  Result := 0;
+
   if IsEmpty then
-    Result := 0
-  else
+    Exit;
+
   try
     if VarIsNumeric(Value) then
-      Result := Double(Value) + EncodeDate(1899, 12, 30)
+    begin
+      var Serial := Double(Value);
+      if Serial > 60 then
+        Result := Serial - 2
+      else
+        Result := Serial - 1;
+    end
     else
       Result := StrToDateTime(VarToStr(Value));
   except
