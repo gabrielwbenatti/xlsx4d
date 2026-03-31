@@ -93,7 +93,9 @@ var
   Root: TXMLNode;
   SINodes: TObjectList<TXMLNode>;
   I: Integer;
-  TNode: TXMLNode;
+  RNodes: TObjectList<TXMLNode>;
+  R, T: TXMLNode;
+  FullText: string;
 begin
   FSharedStrings.Clear;
   
@@ -113,12 +115,21 @@ begin
         try
           for I := 0 to SINodes.Count - 1 do
           begin
-            // try frind <t> within <si>
-            TNode := SINodes[I].FindNode('t');
-            if TNode <> nil then
-              FSharedStrings.Add(TNode.Value)
-            else
-              FSharedStrings.Add(''); // empty str
+            RNodes := SINodes[I].Children;
+            FullText := '';
+
+            for R in RNodes do
+            begin
+              if SameText(R.Name, 't') then
+                FullText := FullText + R.Value
+              else if SameText(R.Name, 'r') then
+              begin
+                T := R.FindNode('t');
+                if T <> nil then
+                  FullText := FullText + T.Value;
+              end;
+            end;
+            FSharedStrings.Add(FullText);
           end;
         finally
           SINodes.Free;

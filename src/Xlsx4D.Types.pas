@@ -71,9 +71,8 @@ implementation
 
 function TCell.AsBoolean: Boolean;
 begin
-  if IsEmpty then
-    Result := False
-  else
+  Result := False;
+  if IsEmpty then Exit;
   try
     Result := VarAsType(Value, varBoolean)
   except
@@ -83,12 +82,17 @@ end;
 
 function TCell.AsDateTime: TDateTime;
 begin
-  if IsEmpty then
-    Result := 0
-  else
+  Result := 0;
+  if IsEmpty then Exit;
   try
     if VarIsNumeric(Value) then
-      Result := Double(Value) + EncodeDate(1899, 12, 30)
+    begin
+      var Serial := Double(Value);
+      if Serial > 60 then
+        Result := Serial - 2
+      else
+        Result := Serial - 1;
+    end
     else
       Result := StrToDateTime(VarToStr(Value));
   except
@@ -98,9 +102,8 @@ end;
 
 function TCell.AsFloat: Double;
 begin
-  if IsEmpty then
-    Result := 0.00
-  else
+  Result := 0.00;
+  if IsEmpty then Exit;
   try
     Result := VarAsType(Value, varDouble);
   except
@@ -110,18 +113,17 @@ end;
 
 function TCell.AsInteger: Integer;
 begin
+  Result := 0;
   if IsEmpty then
-    Result := 0
-  else
-    Result := StrToIntDef(VarToStrDef(Value, '0'), 0);
+    Exit;
+  Result := StrToIntDef(VarToStrDef(Value, '0'), 0);
 end;
 
 function TCell.AsString: string;
 begin
-  if IsEmpty then
-    Result := ''
-  else
-    Result := VarToStrDef(Value, '');
+  Result := '';
+  if IsEmpty then Exit;
+  Result := VarToStrDef(Value, '');
 end;
 
 class function TCell.Create(ARow, ACol: Integer; const AValue: Variant; ACellType: TCellType): TCell;
@@ -235,8 +237,13 @@ begin
 end;
 
 procedure TWorksheet.SetCell(ARow, ACol: Integer; const Value: TCell);
+var
+  AdjustedCell: TCell;
 begin
-  AddCell(Value);
+  AdjustedCell := Value;
+  AdjustedCell.Row := ARow;
+  AdjustedCell.Col := ACol;
+  AddCell(AdjustedCell);
 end;
 
 class function TWorksheet.ColRefToNumber(const AColRef: string): Integer;
