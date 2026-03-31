@@ -71,9 +71,8 @@ implementation
 
 function TCell.AsBoolean: Boolean;
 begin
-  if IsEmpty then
-    Result := False
-  else
+  Result := False;
+  if IsEmpty then Exit;
   try
     Result := VarAsType(Value, varBoolean)
   except
@@ -84,10 +83,7 @@ end;
 function TCell.AsDateTime: TDateTime;
 begin
   Result := 0;
-
-  if IsEmpty then
-    Exit;
-
+  if IsEmpty then Exit;
   try
     if VarIsNumeric(Value) then
     begin
@@ -106,9 +102,8 @@ end;
 
 function TCell.AsFloat: Double;
 begin
-  if IsEmpty then
-    Result := 0.00
-  else
+  Result := 0.00;
+  if IsEmpty then Exit;
   try
     Result := VarAsType(Value, varDouble);
   except
@@ -118,18 +113,17 @@ end;
 
 function TCell.AsInteger: Integer;
 begin
+  Result := 0;
   if IsEmpty then
-    Result := 0
-  else
-    Result := StrToIntDef(VarToStrDef(Value, '0'), 0);
+    Exit;
+  Result := StrToIntDef(VarToStrDef(Value, '0'), 0);
 end;
 
 function TCell.AsString: string;
 begin
-  if IsEmpty then
-    Result := ''
-  else
-    Result := VarToStrDef(Value, '');
+  Result := '';
+  if IsEmpty then Exit;
+  Result := VarToStrDef(Value, '');
 end;
 
 class function TCell.Create(ARow, ACol: Integer; const AValue: Variant; ACellType: TCellType): TCell;
